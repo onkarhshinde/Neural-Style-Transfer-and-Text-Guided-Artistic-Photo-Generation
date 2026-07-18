@@ -346,6 +346,15 @@ Output: `styled_image_original_color.jpg`
 - **`app.py`**: Flask web application
 - **`templates/index.html`**: Web interface
 
+###  Web Dashboard Preview
+
+Here are some screenshots of the interface and results:
+
+|  Upload Section |  Stylized Results + Download Option |
+|-------------------|----------------------------------------|
+| ![Upload](https://github.com/user-attachments/assets/799d8206-f10c-486e-ad1a-37951d21a55c) | ![Results](https://github.com/user-attachments/assets/0953be98-dbe2-4c98-b664-494f22571d21) |
+
+
 ---
 
 ## Phase 2: Text-Guided Generation
@@ -522,6 +531,15 @@ guidance_scale = 10.0
 - **`templates/index_phase2.html`**: Web interface
 - **`setup_phase2.py`**: Setup and testing script
 - **`utils.py`**: Shared utilities
+
+###  Web Dashboard Preview
+
+Here are some screenshots of the interface and results:
+
+|  Upload Section |  Stylized Results + Download Option |
+|-------------------|----------------------------------------|
+| ![Upload](https://github.com/user-attachments/assets/ad624551-6407-4aa1-916d-8894ccb6494e) | ![Results](https://github.com/user-attachments/assets/e58ddc23-f27d-4e88-8c9e-806de8616b98) |
+
 
 ---
 
