@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 2: Text-Guided Artistic Photo Generation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+            padding: 50px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            transform: translate(100px, -100px);
+        }
+
+        .header h1 {
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.15em;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+            line-height: 1.6;
+        }
+
+        .best-settings {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #856404;
+        }
+
+        .best-settings strong {
+            color: #333;
+        }
+
+        .live-images-container {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            border: 2px dashed #667eea;
+        }
+
+        .live-image {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease;
+        }
+
+        .live-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .live-image-label {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        textarea,
+        input[type="number"],
+        input[type="range"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        textarea,
+        select {
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus,
+        input[type="file"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: visible;
+            display: block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 150px;
+            width: 100%;
+        }
+
+        .file-input-label:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        .file-input-label.dragover {
+            background: #e8f0ff;
+            border-color: #667eea;
+        }
+
+        #imagePreview:hover {
+            background: rgba(248, 249, 255, 0.8);
+        }
+
+        #changeButton:hover {
+            background: rgba(102, 126, 234, 1) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            color: #667eea;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
+        .slider-container {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .value-display {
+            background: #f0f2ff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: #667eea;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-generate:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f0f2ff;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .device-info {
+            background: #f0f2ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #667eea;
+        }
+
+        .device-info strong {
+            color: #333;
+        }
+
+        .progress-container {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-text {
+            color: #667eea;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .results-section {
+            margin-top: 40px;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .image-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .image-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%;
+            overflow: hidden;
+        }
+
+        .image-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-actions {
+            padding: 15px;
+            background: #f8f9ff;
+        }
+
+        .btn-download {
+            width: 100%;
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s ease;
+        }
+
+        .btn-download:hover {
+            background: #764ba2;
+        }
+
+        .prompt-suggestions {
+            margin-top: 15px;
+        }
+
+        .prompt-suggestions h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            background: #f0f2ff;
+            color: #667eea;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #667eea;
+        }
+
+        .chip:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .terminal-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #383;
+            border: 1px solid #cfc;
+        }
+
+        .alert-info {
+            background: #eef;
+            color: #338;
+            border: 1px solid #ccf;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ Artistic Photo Generation</h1>
+            <p>Multimodal Text-Guided Artistic Photo Generation Using Generative AI & Deep Learning</p>
+        </div>
+
+        <div class="alert alert-error" id="errorAlert"></div>
+        <div class="alert alert-success" id="successAlert"></div>
+        <div class="alert alert-info" id="infoAlert"></div>
+
+        <div class="main-content">
+            <!-- Input Section -->
+            <div class="card">
+                <h2> Input</h2>
+                
+                <div class="device-info" id="deviceInfo">
+                    Loading device information...
+                </div>
+
+                <div class="form-group">
+                    <label for="contentImage">Content Photo</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="contentImage" accept="image/*">
+                        <label for="contentImage" class="file-input-label" id="uploadLabel">
+                            <div>
+                                <div style="font-size: 2em; margin-bottom: 10px;">📁</div>
+                                <div style="color: #667eea; font-weight: 600;">Click to upload or drag & drop</div>
+                                <div style="color: #999; font-size: 0.9em;">PNG, JPG, GIF or WebP (max 50MB)</div>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <!-- Image Preview - Displays below upload area -->
+                    <div id="imagePreview" style="display: none; position: relative; margin-top: 15px; border: 2px dashed #667eea; border-radius: 8px; overflow-x: auto; cursor: pointer; background: #f8f9ff; padding: 15px; box-sizing: border-box;">
+                        <div style="position: relative; overflow: visible;">
+                            <img id="previewImage" src="" alt="Preview" style="max-width: 100%; height: auto; object-fit: contain; display: block; margin: 0 auto;">
+                            <div id="changeButton" style="position: absolute; top: 10px; right: 10px; background: rgba(102, 126, 234, 0.95); padding: 10px 15px; border-radius: 6px; font-size: 0.85em; color: white; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 20; transition: background 0.3s ease;">Change Image</div>
+                        </div>
+                    </div>
+                    <div class="file-name" id="fileName"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="textPrompt">Artistic Style Description</label>
+                    <textarea id="textPrompt" placeholder="e.g., 'Van Gogh painting style with swirling brushstrokes' or 'Watercolor painting aesthetic with soft colors'"></textarea>
+                </div>
+
+                <div class="prompt-suggestions">
+                    <h4> Suggested Prompts:</h4>
+                    <div class="suggestion-chips" id="suggestionChips"></div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="card">
+                <h2>⚙️ Generation Settings</h2>
+                
+                <div class="best-settings">
+                    <strong>💡 For Content Preservation + Artistic Style:</strong><br>
+                    Strength: <strong>0.45-0.55</strong> | Guidance: <strong>7.0-7.5</strong> | Steps: <strong>40</strong> (fast)
+                </div>
+
+                <div class="form-group">
+                    <label for="numVariations">Number of Variations</label>
+                    <div class="slider-container">
+                        <input type="range" id="numVariations" min="1" max="5" value="2">
+                        <div class="value-display" id="numVariationsDisplay">2</div>
+                    </div>
+                    <small style="color: #999; margin-top: 5px; display: block;">💡 Fast generation: 2-3 | Quality focus: 2-4 variations</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="numSteps">Diffusion Steps (Quality)</label>
+                    <div class="slider-container">
+                        <input type="range" id="numSteps" min="20" max="60" step="5" value="40">
+                        <div class="value-display" id="numStepsDisplay">40</div>
+                    </div>
+                    <small style="color: #999; margin-top: 5px; display: block;">💡 Fast: 30-40 | Balanced: 40-50 | High Quality: 50-60</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="strength">Modification Strength</label>
+                    <div class="slider-container">
+                        <input type="range" id="strength" min="0.3" max="0.95" step="0.05" value="0.50">
+                        <div class="value-display" id="strengthDisplay">0.50</div>
+                    </div>
+                    <small style="color: #999; margin-top: 5px; display: block;">💡 Content preserved: 0.40-0.55 | Balanced: 0.50-0.65 | Aggressive: 0.65+</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="guidanceScale">Guidance Scale (Style Adherence)</label>
+                    <div class="slider-container">
+                        <input type="range" id="guidanceScale" min="1" max="20" step="0.5" value="7.5">
+                        <div class="value-display" id="guidanceScaleDisplay">7.5</div>
+                    </div>
+                    <small style="color: #999; margin-top: 5px; display: block;">💡 Balanced: 7.0-7.5 | Higher = stronger style, Lower = more content preservation</small>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-generate" id="generateBtn"> Generate Images</button>
+                    <button class="btn-secondary" id="resetBtn"> Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status and Terminal Output -->
+        <div class="card" style="display: none;" id="statusCard">
+            <h2>📊 Generation Status</h2>
+            <div class="progress-container" id="progressContainer" style="display: block; margin-top: 0;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="status-text" id="statusText">Initializing...</div>
+            </div>
+            
+            <!-- Live Images Preview -->
+            <div class="live-images-container" id="liveImagesContainer" style="display: none;">
+                <!-- Images will be added here as they are generated -->
+            </div>
+            
+            <div class="terminal-output" id="terminalOutput" style="display: block; border-top: 1px solid #ddd; margin-top: 20px; padding-top: 20px;"></div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="card results-section" style="display: none;" id="resultsSection">
+            <h2>✨ Generated Results</h2>
+            <div style="margin-bottom: 15px; color: #667eea;">
+                Generated <strong id="numGenerated">0</strong> artistic variation(s) for prompt: <strong id="resultPrompt"></strong>
+            </div>
+            <div class="gallery" id="resultsGallery"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============== State Management ==============
+        const state = {
+            contentImage: null,
+            isGenerating: false,
+            currentSessionId: null
+        };
+
+        // ============== DOM Elements ==============
+        const elements = {
+            contentImage: document.getElementById('contentImage'),
+            textPrompt: document.getElementById('textPrompt'),
+            numVariations: document.getElementById('numVariations'),
+            numSteps: document.getElementById('numSteps'),
+            strength: document.getElementById('strength'),
+            guidanceScale: document.getElementById('guidanceScale'),
+            generateBtn: document.getElementById('generateBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            progressContainer: document.getElementById('progressContainer'),
+            progressFill: document.getElementById('progressFill'),
+            statusText: document.getElementById('statusText'),
+            fileName: document.getElementById('fileName'),
+            terminalOutput: document.getElementById('terminalOutput'),
+            resultsSection: document.getElementById('resultsSection'),
+            resultsGallery: document.getElementById('resultsGallery'),
+            successAlert: document.getElementById('successAlert'),
+            errorAlert: document.getElementById('errorAlert'),
+            infoAlert: document.getElementById('infoAlert')
+        };
+
+        // ============== Initialization ==============
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDeviceInfo();
+            loadSamplePrompts();
+            setupEventListeners();
+        });
+
+        // ============== Device Info ==============
+        async function loadDeviceInfo() {
+            try {
+                const response = await fetch('/api/device-info');
+                const data = await response.json();
+                
+                let deviceText = data.device === 'cuda' ? 
+                    `<strong>GPU:</strong> ${data.gpu_name} (${(data.gpu_memory).toFixed(1)} GB)` :
+                    '<strong>Device:</strong> CPU (Slower generation)';
+                
+                document.getElementById('deviceInfo').innerHTML = `⚡ ${deviceText}`;
+            } catch (error) {
+                console.error('Error loading device info:', error);
+            }
+        }
+
+        // ============== Sample Prompts ==============
+        async function loadSamplePrompts() {
+            const suggestionChips = document.getElementById('suggestionChips');
+            const samplePrompts = {{ sample_prompts | tojson }};
+            
+            samplePrompts.forEach(prompt => {
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                chip.textContent = prompt;
+                chip.onclick = () => {
+                    elements.textPrompt.value = prompt;
+                    elements.textPrompt.focus();
+                };
+                suggestionChips.appendChild(chip);
+            });
+        }
+
+        // ============== Event Listeners ==============
+        function setupEventListeners() {
+            // File input
+            elements.contentImage.addEventListener('change', handleFileSelect);
+            
+            // Change image button
+            const changeButton = document.getElementById('changeButton');
+            const imagePreview = document.getElementById('imagePreview');
+            if (changeButton) {
+                changeButton.addEventListener('click', () => {
+                    elements.contentImage.click();
+                });
+            }
+            if (imagePreview) {
+                imagePreview.addEventListener('click', () => {
+                    elements.contentImage.click();
+                });
+            }
+            
+            // Drag and drop
+            const fileLabel = document.querySelector('.file-input-label');
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                fileLabel.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            fileLabel.addEventListener('dragenter', () => fileLabel.classList.add('dragover'));
+            fileLabel.addEventListener('dragleave', () => fileLabel.classList.remove('dragover'));
+            fileLabel.addEventListener('drop', (e) => {
+                fileLabel.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    elements.contentImage.files = files;
+                    handleFileSelect();
+                }
+            });
+            
+            // Sliders
+            elements.numVariations.addEventListener('input', (e) => {
+                document.getElementById('numVariationsDisplay').textContent = e.target.value;
+            });
+            elements.numSteps.addEventListener('input', (e) => {
+                document.getElementById('numStepsDisplay').textContent = e.target.value;
+            });
+            elements.strength.addEventListener('input', (e) => {
+                document.getElementById('strengthDisplay').textContent = parseFloat(e.target.value).toFixed(2);
+            });
+            elements.guidanceScale.addEventListener('input', (e) => {
+                document.getElementById('guidanceScaleDisplay').textContent = parseFloat(e.target.value).toFixed(1);
+            });
+            
+            // Buttons
+            elements.generateBtn.addEventListener('click', handleGenerate);
+            elements.resetBtn.addEventListener('click', handleReset);
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleFileSelect() {
+            const file = elements.contentImage.files[0];
+            if (file) {
+                elements.fileName.textContent = `Selected: ${file.name}`;
+                state.contentImage = file;
+                
+                // Display image preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewImage = document.getElementById('previewImage');
+                    const imagePreview = document.getElementById('imagePreview');
+                    const uploadLabel = document.getElementById('uploadLabel');
+                    
+                    previewImage.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    uploadLabel.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // ============== Generation ==============
+        async function handleGenerate() {
+            // Validation
+            if (!state.contentImage) {
+                showAlert('errorAlert', 'Please select a content image');
+                return;
+            }
+            
+            if (!elements.textPrompt.value.trim()) {
+                showAlert('errorAlert', 'Please enter a text prompt');
+                return;
+            }
+
+            if (state.isGenerating) {
+                showAlert('infoAlert', 'Generation already in progress...');
+                return;
+            }
+
+            state.isGenerating = true;
+            elements.generateBtn.disabled = true;
+            document.getElementById('statusCard').style.display = 'block';
+            elements.terminalOutput.innerHTML = '';
+
+            // Hide previous results
+            elements.resultsSection.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('content_image', state.contentImage);
+            formData.append('text_prompt', elements.textPrompt.value.trim());
+            formData.append('num_variations', elements.numVariations.value);
+            formData.append('num_steps', elements.numSteps.value);
+            formData.append('strength', elements.strength.value);
+            formData.append('guidance_scale', elements.guidanceScale.value);
+
+            try {
+                showAlert('infoAlert', 'Starting image generation... This may take a few minutes.');
+                
+                // Send generation request
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Generation failed');
+                }
+
+                // Connect to real-time output stream
+                const sessionId = data.session_id;
+                state.currentSessionId = sessionId;
+                connectToOutputStream(sessionId);
+                
+            } catch (error) {
+                console.error('Generation error:', error);
+                showAlert('errorAlert', `Error: ${error.message}`);
+                state.isGenerating = false;
+                elements.generateBtn.disabled = false;
+            }
+        }
+
+        // ============== Real-time Output Stream ==============
+        function connectToOutputStream(sessionId) {
+            const eventSource = new EventSource(`/api/output-stream/${sessionId}`);
+            let imageCount = 0;
+            const liveImagesContainer = document.getElementById('liveImagesContainer');
+            
+            eventSource.addEventListener('message', (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'output') {
+                        const line = data.text;
+                        
+                        // Check if this is an image ready notification
+                        if (line.includes('[IMAGE_READY]')) {
+                            // Extract image path
+                            const pathMatch = line.match(/\[IMAGE_READY\]\s*(.+)/);
+                            if (pathMatch) {
+                                const imagePath = pathMatch[1].trim();
+                                imageCount++;
+                                
+                                // Show live images container if not visible
+                                if (liveImagesContainer.style.display === 'none') {
+                                    liveImagesContainer.style.display = 'grid';
+                                }
+                                
+                                // Create image element
+                                const imageDiv = document.createElement('div');
+                                imageDiv.className = 'live-image';
+                                imageDiv.innerHTML = `
+                                    <img src="${imagePath}" alt="Variation ${imageCount}">
+                                    <div class="live-image-label">Var ${imageCount}</div>
+                                `;
+                                liveImagesContainer.appendChild(imageDiv);
+                                
+                                // Log to terminal without the full image path
+                                const terminalLine = `[✓] Image ${imageCount} generated: variation_${String(imageCount).padStart(3, '0')}.png`;
+                                appendTerminalOutput(terminalLine);
+                            }
+                        } else {
+                            // Regular terminal output
+                            appendTerminalOutput(line);
+                        }
+                    } else if (data.type === 'complete') {
+                        eventSource.close();
+                        fetchGenerationResults(sessionId);
+                    } else if (data.type === 'error') {
+                        eventSource.close();
+                        showAlert('errorAlert', `Stream error: ${data.message}`);
+                        state.isGenerating = false;
+                        elements.generateBtn.disabled = false;
+                    }
+                } catch (e) {
+                    console.error('Error parsing stream data:', e);
+                }
+            });
+            
+            eventSource.addEventListener('error', () => {
+                eventSource.close();
+                showAlert('errorAlert', 'Connection to output stream lost');
+                state.isGenerating = false;
+                elements.generateBtn.disabled = false;
+            });
+        }
+
+        function appendTerminalOutput(line) {
+            const escapedLine = line.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            if (elements.terminalOutput.innerHTML) {
+                elements.terminalOutput.innerHTML += `<br>${escapedLine}`;
+            } else {
+                elements.terminalOutput.innerHTML = escapedLine;
+            }
+            // Auto-scroll to bottom
+            elements.terminalOutput.scrollTop = elements.terminalOutput.scrollHeight;
+        }
+
+        // ============== Fetch Results ==============
+        async function fetchGenerationResults(sessionId) {
+            try {
+                const response = await fetch(`/api/generation-result/${sessionId}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch results');
+                }
+
+                // Show results
+                showResults(data, data.text_prompt || elements.textPrompt.value.trim());
+                showAlert('successAlert', `✓ Successfully generated ${data.num_generated} image(s)!`);
+                
+            } catch (error) {
+                console.error('Error fetching results:', error);
+                showAlert('errorAlert', `Error: ${error.message}`);
+            } finally {
+                state.isGenerating = false;
+                elements.generateBtn.disabled = false;
+            }
+        }
+
+        function showResults(data, textPrompt) {
+            state.currentSessionId = data.session_id;
+            
+            elements.resultsGallery.innerHTML = '';
+            document.getElementById('numGenerated').textContent = data.num_generated;
+            document.getElementById('resultPrompt').textContent = textPrompt;
+
+            data.result_images.forEach((imagePath, index) => {
+                const card = document.createElement('div');
+                card.className = 'image-card';
+                card.innerHTML = `
+                    <div class="image-container">
+                        <img src="${imagePath}" alt="Generated variation ${index + 1}">
+                    </div>
+                    <div class="image-actions">
+                        <button class="btn-download" onclick="downloadImage('${imagePath}', 'variation_${index + 1}.png')">
+                            ⬇️ Download
+                        </button>
+                    </div>
+                `;
+                elements.resultsGallery.appendChild(card);
+            });
+
+            elements.resultsSection.style.display = 'block';
+            elements.resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function downloadImage(imagePath, filename) {
+            const a = document.createElement('a');
+            a.href = imagePath;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function handleReset() {
+            elements.contentImage.value = '';
+            elements.textPrompt.value = '';
+            elements.numVariations.value = '2';
+            elements.numSteps.value = '40';
+            elements.strength.value = '0.50';
+            elements.guidanceScale.value = '7.5';
+            elements.fileName.textContent = '';
+            document.getElementById('statusCard').style.display = 'none';
+            elements.resultsSection.style.display = 'none';
+            
+            // Clear live images and terminal
+            document.getElementById('liveImagesContainer').innerHTML = '';
+            document.getElementById('liveImagesContainer').style.display = 'none';
+            elements.terminalOutput.innerHTML = '';
+            
+            // Clear image preview and show upload label again
+            const imagePreview = document.getElementById('imagePreview');
+            const uploadLabel = document.getElementById('uploadLabel');
+            imagePreview.style.display = 'none';
+            uploadLabel.style.display = 'flex';
+            document.getElementById('previewImage').src = '';
+            
+            // Update display values
+            document.getElementById('numVariationsDisplay').textContent = '2';
+            document.getElementById('numStepsDisplay').textContent = '40';
+            document.getElementById('strengthDisplay').textContent = '0.50';
+            document.getElementById('guidanceScaleDisplay').textContent = '7.5';
+            
+            state.contentImage = null;
+            closeAllAlerts();
+        }
+
+        function showAlert(alertId, message) {
+            closeAllAlerts();
+            const alert = document.getElementById(alertId);
+            alert.textContent = message;
+            alert.style.display = 'block';
+        }
+
+        function closeAllAlerts() {
+            document.getElementById('successAlert').style.display = 'none';
+            document.getElementById('errorAlert').style.display = 'none';
+            document.getElementById('infoAlert').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

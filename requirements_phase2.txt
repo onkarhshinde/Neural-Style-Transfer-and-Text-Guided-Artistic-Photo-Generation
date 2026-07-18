@@ -1,0 +1,29 @@
+# Phase 2 Dependencies (Text-Guided Image Generation)
+# Note: Phase 1 dependencies already installed
+
+# Image Processing
+pillow>=7.0.0
+opencv-python>=4.4.0
+numpy>=1.16.0
+
+# Multimodal Models (pip-friendly alternatives)
+open-clip-torch>=2.0.0
+
+# Text-Guided Image Generation
+diffusers>=0.14.0
+transformers>=4.20.0
+
+# Web Framework
+flask>=1.1.0
+flask-cors>=3.0.10
+werkzeug>=1.0.0
+
+# Utilities
+tqdm>=4.60.0
+matplotlib>=3.1.0
+requests>=2.25.0
+pyyaml>=5.0
+
+# PyTorch (use conda install instead for best compatibility)
+# torch>=1.13.0
+# torchvision>=0.14.0
